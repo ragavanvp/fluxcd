@@ -53,7 +53,7 @@ jobs:
         run: |
           git config --global user.email "msgtovpragavan@gmail.com"
           git config --global user.name "ragavanvp"
-          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/ragavanvp/fluxcd.git
+          git config --global credential.helper ""
           git add k8s/deployment.yaml
           git diff --cached --quiet || git commit -m "Update deployment image to $IMAGE"
-          git push origin HEAD:main
+          git push https://x-access-token:${GH_PAT}@github.com/ragavanvp/fluxcd.git HEAD:main
