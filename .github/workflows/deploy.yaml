@@ -1,0 +1,37 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - run: |
+        echo "${{ secrets.GCP_SA_KEY }}" > key.json
+        gcloud auth activate-service-account --key-file=key.json
+        gcloud auth configure-docker asia-south1-docker.pkg.dev --quiet
+
+    - run: |
+        IMAGE=asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest
+        docker build -t $IMAGE ./app
+        docker push $IMAGE
+
+    - run: |
+        IMAGE=asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest
+        sed -i "s|image: .*|image: $IMAGE|" k8s/deployment.yaml
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git commit -am "Update deployment image to $IMAGE"
+        git push
