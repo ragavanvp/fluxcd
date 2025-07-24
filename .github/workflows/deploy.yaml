@@ -29,31 +29,10 @@ jobs:
           IMAGE="asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest"
           docker build -t "$IMAGE" ./app
           docker push "$IMAGE"
+          echo "Docker image pushed: $IMAGE"
 
-      - name: Update Kubernetes deployment YAML
+      - name: Verify image in Artifact Registry
         run: |
-          IMAGE="asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest"
-          sed -i "s|image: .*|image: $IMAGE|" k8s/deployment.yaml
-
-      - name: Debug GH_PAT presence
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -z "$GH_PAT" ]; then
-            echo "ERROR: GH_PAT is empty"
-            exit 1
-          else
-            echo "GH_PAT is present with length ${#GH_PAT}"
-          fi
-
-      - name: Commit and push updated manifest
-        env:
-          IMAGE: asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          git config --global user.email "msgtovpragavan@gmail.com"
-          git config --global user.name "ragavanvp"
-          git config --global credential.helper ""
-          git add k8s/deployment.yaml
-          git diff --cached --quiet || git commit -m "Update deployment image to $IMAGE"
-          git push https://x-access-token:${GH_PAT}@github.com/ragavanvp/fluxcd.git HEAD:main
+          gcloud artifacts docker images list asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp \
+            --limit=5 \
+            --format="table[box](DIGEST, TAGS, IMAGE_SIZE_BYTES, UPLOAD_TIME)"
