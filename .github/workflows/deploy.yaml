@@ -36,9 +36,13 @@ jobs:
           sed -i "s|image: .*|image: $IMAGE|" k8s/deployment.yaml
 
       - name: Commit and push updated manifest
+        env:
+          IMAGE: "asia-south1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/webapp/webapp:latest"
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.email "msgtovpragavan@gmail.com"
           git config --global user.name "ragavanvp"
+          git remote set-url origin https://x-access-token:${GH_PAT}@github.com/ragavanvp/fluxcd.git
           git add k8s/deployment.yaml
           git diff --cached --quiet || git commit -m "Update deployment image to $IMAGE"
-          git push
+          git push origin HEAD:main
